@@ -1,3 +1,7 @@
+// Sandstorm context is detected using the METEOR_SETTINGS environment variable
+// in the package definition.
+const isSandstorm = Meteor.settings && Meteor.settings.public &&
+  Meteor.settings.public.sandstorm;
 Users = Meteor.users;
 
 Users.attachSchema(new SimpleSchema({
@@ -55,6 +59,10 @@ Users.attachSchema(new SimpleSchema({
     type: String,
     optional: true,
   },
+  'profile.hiddenSystemMessages': {
+    type: Boolean,
+    optional: true,
+  },
   'profile.initials': {
     type: String,
     optional: true,
@@ -71,12 +79,20 @@ Users.attachSchema(new SimpleSchema({
     type: [String],
     optional: true,
   },
+  'profile.showCardsCountAt': {
+    type: Number,
+    optional: true,
+  },
   'profile.starredBoards': {
     type: [String],
     optional: true,
   },
   'profile.tags': {
     type: [String],
+    optional: true,
+  },
+  'profile.icode': {
+    type: String,
     optional: true,
   },
   services: {
@@ -86,6 +102,10 @@ Users.attachSchema(new SimpleSchema({
   },
   heartbeat: {
     type: Date,
+    optional: true,
+  },
+  isAdmin: {
+    type: Boolean,
     optional: true,
   },
 }));
@@ -105,6 +125,16 @@ if (Meteor.isClient) {
       return board && board.hasMember(this._id);
     },
 
+    isNotCommentOnly() {
+      const board = Boards.findOne(Session.get('currentBoard'));
+      return board && board.hasMember(this._id) && !board.hasCommentOnly(this._id);
+    },
+
+    isCommentOnly() {
+      const board = Boards.findOne(Session.get('currentBoard'));
+      return board && board.hasCommentOnly(this._id);
+    },
+
     isBoardAdmin() {
       const board = Boards.findOne(Session.get('currentBoard'));
       return board && board.hasAdmin(this._id);
@@ -118,37 +148,42 @@ Users.helpers({
   },
 
   starredBoards() {
-    const {starredBoards = []} = this.profile;
-    return Boards.find({archived: false, _id: {$in: starredBoards}});
+    const { starredBoards = [] } = this.profile;
+    return Boards.find({ archived: false, _id: { $in: starredBoards } });
   },
 
   hasStarred(boardId) {
-    const {starredBoards = []} = this.profile;
+    const { starredBoards = [] } = this.profile;
     return _.contains(starredBoards, boardId);
   },
 
   invitedBoards() {
-    const {invitedBoards = []} = this.profile;
-    return Boards.find({archived: false, _id: {$in: invitedBoards}});
+    const { invitedBoards = [] } = this.profile;
+    return Boards.find({ archived: false, _id: { $in: invitedBoards } });
   },
 
   isInvitedTo(boardId) {
-    const {invitedBoards = []} = this.profile;
+    const { invitedBoards = [] } = this.profile;
     return _.contains(invitedBoards, boardId);
   },
 
   hasTag(tag) {
-    const {tags = []} = this.profile;
+    const { tags = [] } = this.profile;
     return _.contains(tags, tag);
   },
 
   hasNotification(activityId) {
-    const {notifications = []} = this.profile;
+    const { notifications = [] } = this.profile;
     return _.contains(notifications, activityId);
   },
 
+  hasHiddenSystemMessages() {
+    const profile = this.profile || {};
+    return profile.hiddenSystemMessages || false;
+  },
+
   getEmailBuffer() {
-    const {emailBuffer = []} = this.profile;
+    const { emailBuffer = [] } = this.profile;
     return emailBuffer;
   },
 
@@ -165,6 +200,11 @@ Users.helpers({
     } else {
       return this.username[0].toUpperCase();
     }
+  },
+
+  getLimitToShowCardsCount() {
+    const profile = this.profile || {};
+    return profile.showCardsCountAt;
   },
 
   getName() {
@@ -227,6 +267,14 @@ Users.mutations({
       this.addTag(tag);
   },
 
+  toggleSystem(value = false) {
+    return {
+      $set: {
+        'profile.hiddenSystemMessages': !value,
+      },
+    };
+  },
+
   addNotification(activityId) {
     return {
       $addToSet: {
@@ -260,7 +308,11 @@ Users.mutations({
   },
 
   setAvatarUrl(avatarUrl) {
-    return { $set: { 'profile.avatarUrl': avatarUrl }};
+    return { $set: { 'profile.avatarUrl': avatarUrl } };
+  },
+
+  setShowCardsCountAt(limit) {
+    return { $set: { 'profile.showCardsCountAt': limit } };
   },
 });
 
@@ -271,8 +323,16 @@ Meteor.methods({
     if (nUsersWithUsername > 0) {
       throw new Meteor.Error('username-already-taken');
     } else {
-      Users.update(this.userId, {$set: { username }});
+      Users.update(this.userId, { $set: { username } });
     }
+  },
+  toggleSystemMessages() {
+    const user = Meteor.user();
+    user.toggleSystem(user.hasHiddenSystemMessages());
+  },
+  changeLimitToShowCardsCount(limit) {
+    check(limit, Number);
+    Meteor.user().setShowCardsCountAt(limit);
   },
 });
 
@@ -286,19 +346,19 @@ if (Meteor.isServer) {
       const inviter = Meteor.user();
       const board = Boards.findOne(boardId);
       const allowInvite = inviter &&
-          board &&
-          board.members &&
-          _.contains(_.pluck(board.members, 'userId'), inviter._id) &&
-          _.where(board.members, {userId: inviter._id})[0].isActive &&
-          _.where(board.members, {userId: inviter._id})[0].isAdmin;
+        board &&
+        board.members &&
+        _.contains(_.pluck(board.members, 'userId'), inviter._id) &&
+        _.where(board.members, { userId: inviter._id })[0].isActive &&
+        _.where(board.members, { userId: inviter._id })[0].isAdmin;
       if (!allowInvite) throw new Meteor.Error('error-board-notAMember');
 
       this.unblock();
 
       const posAt = username.indexOf('@');
       let user = null;
-      if (posAt>=0) {
-        user = Users.findOne({emails: {$elemMatch: {address: username}}});
+      if (posAt >= 0) {
+        user = Users.findOne({ emails: { $elemMatch: { address: username } } });
       } else {
         user = Users.findOne(username) || Users.findOne({ username });
       }
@@ -306,8 +366,9 @@ if (Meteor.isServer) {
         if (user._id === inviter._id) throw new Meteor.Error('error-user-notAllowSelf');
       } else {
         if (posAt <= 0) throw new Meteor.Error('error-user-doesNotExist');
-
-        const email = username;
+        if (Settings.findOne().disableRegistration) throw new Meteor.Error('error-user-notCreated');
+        // Set in lowercase email before creating account
+        const email = username.toLowerCase();
         username = email.substring(0, posAt);
         const newUserId = Accounts.createUser({ username, email });
         if (!newUserId) throw new Meteor.Error('error-user-notCreated');
@@ -335,7 +396,7 @@ if (Meteor.isServer) {
         };
         const lang = user.getLanguage();
         Email.send({
-          to: user.emails[0].address,
+          to: user.emails[0].address.toLowerCase(),
           from: Accounts.emailTemplates.from,
           subject: TAPi18n.__('email-invite-subject', params, lang),
           text: TAPi18n.__('email-invite-text', params, lang),
@@ -343,9 +404,31 @@ if (Meteor.isServer) {
       } catch (e) {
         throw new Meteor.Error('email-fail', e.message);
       }
-
       return { username: user.username, email: user.emails[0].address };
     },
+  });
+  Accounts.onCreateUser((options, user) => {
+    const userCount = Users.find().count();
+    if (!isSandstorm && userCount === 0) {
+      user.isAdmin = true;
+      return user;
+    }
+    const disableRegistration = Settings.findOne().disableRegistration;
+    if (!disableRegistration) {
+      return user;
+    }
+
+    if (!options || !options.profile) {
+      throw new Meteor.Error('error-invitation-code-blank', 'The invitation code is required');
+    }
+    const invitationCode = InvitationCodes.findOne({ code: options.profile.invitationcode, email: options.email, valid: true });
+    if (!invitationCode) {
+      throw new Meteor.Error('error-invitation-code-not-exist', 'The invitation code doesn\'t exist');
+    } else {
+      user.profile = { icode: options.profile.invitationcode };
+    }
+
+    return user;
   });
 }
 
@@ -362,7 +445,7 @@ if (Meteor.isServer) {
   // counter.
   // We need to run this code on the server only, otherwise the incrementation
   // will be done twice.
-  Users.after.update(function(userId, user, fieldNames) {
+  Users.after.update(function (userId, user, fieldNames) {
     // The `starredBoards` list is hosted on the `profile` field. If this
     // field hasn't been modificated we don't need to run this hook.
     if (!_.contains(fieldNames, 'profile'))
@@ -381,7 +464,7 @@ if (Meteor.isServer) {
     // direction and then in the other.
     function incrementBoards(boardsIds, inc) {
       boardsIds.forEach((boardId) => {
-        Boards.update(boardId, {$inc: {stars: inc}});
+        Boards.update(boardId, { $inc: { stars: inc } });
       });
     }
     incrementBoards(_.difference(oldIds, newIds), -1);
@@ -394,24 +477,109 @@ if (Meteor.isServer) {
     return fakeUserId.get() || getUserId();
   };
 
-  Users.after.insert((userId, doc) => {
-    const fakeUser = {
-      extendAutoValueContext: {
-        userId: doc._id,
-      },
-    };
+  if (!isSandstorm) {
+    Users.after.insert((userId, doc) => {
+      const fakeUser = {
+        extendAutoValueContext: {
+          userId: doc._id,
+        },
+      };
 
-    fakeUserId.withValue(doc._id, () => {
-      // Insert the Welcome Board
-      Boards.insert({
-        title: TAPi18n.__('welcome-board'),
-        permission: 'private',
-      }, fakeUser, (err, boardId) => {
+      fakeUserId.withValue(doc._id, () => {
+        // Insert the Welcome Board
+        Boards.insert({
+          title: TAPi18n.__('welcome-board'),
+          permission: 'private',
+        }, fakeUser, (err, boardId) => {
 
-        ['welcome-list1', 'welcome-list2'].forEach((title) => {
-          Lists.insert({ title: TAPi18n.__(title), boardId }, fakeUser);
+          ['welcome-list1', 'welcome-list2'].forEach((title) => {
+            Lists.insert({ title: TAPi18n.__(title), boardId }, fakeUser);
+          });
         });
       });
     });
+  }
+
+  Users.after.insert((userId, doc) => {
+
+    //invite user to corresponding boards
+    const disableRegistration = Settings.findOne().disableRegistration;
+    if (disableRegistration) {
+      const invitationCode = InvitationCodes.findOne({ code: doc.profile.icode, valid: true });
+      if (!invitationCode) {
+        throw new Meteor.Error('error-invitation-code-not-exist');
+      } else {
+        invitationCode.boardsToBeInvited.forEach((boardId) => {
+          const board = Boards.findOne(boardId);
+          board.addMember(doc._id);
+        });
+        if (!doc.profile) {
+          doc.profile = {};
+        }
+        doc.profile.invitedBoards = invitationCode.boardsToBeInvited;
+        Users.update(doc._id, { $set: { profile: doc.profile } });
+        InvitationCodes.update(invitationCode._id, { $set: { valid: false } });
+      }
+    }
   });
 }
+
+
+// USERS REST API
+if (Meteor.isServer) {
+  JsonRoutes.add('GET', '/api/user', function(req, res, next) {
+    Authentication.checkLoggedIn(req.userId);
+    const data = Meteor.users.findOne({ _id: req.userId});
+    delete data.services;
+    JsonRoutes.sendResult(res, {
+      code: 200,
+      data,
+    });
+  });
+
+  JsonRoutes.add('GET', '/api/users', function (req, res, next) {
+    Authentication.checkUserId( req.userId);
+    JsonRoutes.sendResult(res, {
+      code: 200,
+      data: Meteor.users.find({}).map(function (doc) {
+        return { _id: doc._id, username: doc.username };
+      }),
+    });
+  });
+  JsonRoutes.add('GET', '/api/users/:id', function (req, res, next) {
+    Authentication.checkUserId( req.userId);
+    const id = req.params.id;
+    JsonRoutes.sendResult(res, {
+      code: 200,
+      data: Meteor.users.findOne({ _id: id }),
+    });
+  });
+  JsonRoutes.add('POST', '/api/users/', function (req, res, next) {
+    Authentication.checkUserId( req.userId);
+    const id = Accounts.createUser({
+      username: req.body.username,
+      email: req.body.email,
+      password: 'default',
+    });
+
+    JsonRoutes.sendResult(res, {
+      code: 200,
+      data: {
+        _id: id,
+      },
+    });
+  });
+
+  JsonRoutes.add('DELETE', '/api/users/:id', function (req, res, next) {
+    Authentication.checkUserId( req.userId);
+    const id = req.params.id;
+    Meteor.users.remove({ _id: id });
+    JsonRoutes.sendResult(res, {
+      code: 200,
+      data: {
+        _id: id,
+      },
+    });
+  });
+}
+

@@ -28,6 +28,10 @@ BlazeComponent.extendComponent({
     return card.findWatcher(Meteor.userId());
   },
 
+  canModifyCard() {
+    return Meteor.user() && Meteor.user().isBoardMember() && !Meteor.user().isCommentOnly();
+  },
+
   scrollParentContainer() {
     const cardPanelWidth = 510;
     const bodyBoardComponent = this.parentComponent();
@@ -63,6 +67,9 @@ BlazeComponent.extendComponent({
   events() {
     const events = {
       [`${CSSEvents.transitionend} .js-card-details`]() {
+        this.isLoaded.set(true);
+      },
+      [`${CSSEvents.animationend} .js-card-details`]() {
         this.isLoaded.set(true);
       },
     };
@@ -137,12 +144,18 @@ Template.cardDetailsActionsPopup.helpers({
   isWatching() {
     return this.findWatcher(Meteor.userId());
   },
+
+  canModifyCard() {
+    return Meteor.user() && Meteor.user().isBoardMember() && !Meteor.user().isCommentOnly();
+  },
 });
 
 Template.cardDetailsActionsPopup.events({
   'click .js-members': Popup.open('cardMembers'),
   'click .js-labels': Popup.open('cardLabels'),
   'click .js-attachments': Popup.open('cardAttachments'),
+  'click .js-start-date': Popup.open('editCardStartDate'),
+  'click .js-due-date': Popup.open('editCardDueDate'),
   'click .js-move-card': Popup.open('moveCard'),
   'click .js-move-card-to-top'(evt) {
     evt.preventDefault();

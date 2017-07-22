@@ -35,6 +35,9 @@ Activities.helpers({
   attachment() {
     return Attachments.findOne(this.attachmentId);
   },
+  checklist() {
+    return Checklists.findOne(this.checklistId);
+  },
 });
 
 Activities.before.insert((userId, doc) => {
@@ -49,6 +52,8 @@ if (Meteor.isServer) {
     Activities._collection._ensureIndex({ createdAt: -1 });
     Activities._collection._ensureIndex({ cardId: 1, createdAt: -1 });
     Activities._collection._ensureIndex({ boardId: 1, createdAt: -1 });
+    Activities._collection._ensureIndex({ commentId: 1 }, { partialFilterExpression: { commentId: { $exists: true } } });
+    Activities._collection._ensureIndex({ attachmentId: 1 }, { partialFilterExpression: { attachmentId: { $exists: true } } });
   });
 
   Activities.after.insert((userId, doc) => {
@@ -102,6 +107,10 @@ if (Meteor.isServer) {
       const attachment = activity.attachment();
       params.attachment = attachment._id;
     }
+    if (activity.checklistId) {
+      const checklist = activity.checklist();
+      params.checklist = checklist.title;
+    }
     if (board) {
       const watchingUsers = _.pluck(_.where(board.watchers, {level: 'watching'}), 'userId');
       const trackingUsers = _.pluck(_.where(board.watchers, {level: 'tracking'}), 'userId');
@@ -122,5 +131,10 @@ if (Meteor.isServer) {
     Notifications.getUsers(participants, watchers).forEach((user) => {
       Notifications.notify(user, title, description, params);
     });
+
+    const integration = Integrations.findOne({ boardId: board._id, type: 'outgoing-webhooks', enabled: true });
+    if (integration) {
+      Meteor.call('outgoingWebhooks', integration, description, params);
+    }
   });
 }

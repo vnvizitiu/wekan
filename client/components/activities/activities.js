@@ -12,10 +12,12 @@ BlazeComponent.extendComponent({
       const capitalizedMode = Utils.capitalize(mode);
       const id = Session.get(`current${capitalizedMode}`);
       const limit = this.page.get() * activitiesPerPage;
+      const user = Meteor.user();
+      const hideSystem = user ? user.hasHiddenSystemMessages() : false;
       if (id === null)
         return;
 
-      this.subscribe('activities', mode, id, limit, () => {
+      this.subscribe('activities', mode, id, limit, hideSystem, () => {
         this.loadNextPageLocked = false;
 
         // If the sibear peak hasn't increased, that mean that there are no more
@@ -84,7 +86,7 @@ BlazeComponent.extendComponent({
     const attachment = this.currentData().attachment();
     // trying to display url before file is stored generates js errors
     return attachment && attachment.url({ download: true }) && Blaze.toHTML(HTML.A({
-      href: FlowRouter.path(attachment.url({ download: true })),
+      href: attachment.url({ download: true }),
       target: '_blank',
     }, attachment.name()));
   },

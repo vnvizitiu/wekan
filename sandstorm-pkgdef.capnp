@@ -22,10 +22,10 @@ const pkgdef :Spk.PackageDefinition = (
     appTitle = (defaultText = "Wekan"),
     # The name of the app as it is displayed to the user.
 
-    appVersion = 12,
+    appVersion = 20,
     # Increment this for every release.
 
-    appMarketingVersion = (defaultText = "0.11.0-rc2"),
+    appMarketingVersion = (defaultText = "0.18.0~2017-04-02"),
     # Human-readable presentation of the app version.
 
     minUpgradableAppVersion = 0,
@@ -57,14 +57,15 @@ const pkgdef :Spk.PackageDefinition = (
         market = (svg = embed "meta/icons/wekan-150.svg"),
       ),
 
-      website = "https://wekan.io",
+      website = "https://wekan.github.io",
       codeUrl = "https://github.com/wekan/wekan",
       license = (openSource = mit),
       categories = [productivity, office],
 
       author = (
-        contactEmail = "mquandalle@wekan.io",
-        pgpSignature = embed "meta/mquandalle-pgp-sig",
+        upstreamAuthor = "Maxime Quandalle",
+        contactEmail = "david@sandstorm.io",
+        pgpSignature = embed "meta/dwrensha-pgp-sig",
       ),
 
       pgpKeyring = embed "meta/keyring",
@@ -75,11 +76,15 @@ const pkgdef :Spk.PackageDefinition = (
 
       screenshots = [
         (
-          width = 512,
-          height = 330,
-          jpeg = embed "meta/screenshots/board-view.jpg"
+          width = 1920,
+          height = 1133,
+          png = embed "meta/screenshots/board_view_01.png"
         ),
-        # XXX The screenshots should have a standard width and height.
+        (
+          width = 1920,
+          height = 1133,
+          png = embed "meta/screenshots/board_view_02.png"
+        ),
       ],
 
       changeLog = (
@@ -173,8 +178,48 @@ const pkgdef :Spk.PackageDefinition = (
       #
       # XXX Administrators configuration options aren’t implemented yet, so this
       # role is currently useless.
-      )]
-    )
+      )],
+
+      eventTypes = [(
+         name = "addBoardMember",
+         verbPhrase = (defaultText = "added to board"),
+      ), (
+        name = "createList",
+        verbPhrase = (defaultText = "created new list"),
+      ), (
+        name = "archivedList",
+        verbPhrase = (defaultText = "archived list"),
+      ), (
+        name = "restoredList",
+        verbPhrase = (defaultText = "restored list"),
+      ), (
+        name = "createCard",
+        verbPhrase = (defaultText = "created new card"),
+      ), (
+        name = "moveCard",
+        verbPhrase = (defaultText = "moved card"),
+      ), (
+        name = "archivedCard",
+        verbPhrase = (defaultText = "archived card"),
+      ), (
+        name = "restoredCard",
+        verbPhrase = (defaultText = "restored card"),
+      ), (
+        name = "addComment",
+        verbPhrase = (defaultText = "added comment"),
+      ), (
+        name = "addAttachement",
+        verbPhrase = (defaultText = "added attachment"),
+      ), (
+        name = "joinMember",
+        verbPhrase = (defaultText = "added to card"),
+      ), (
+        name = "unjoinMember",
+        verbPhrase = (defaultText = "removed from card"),
+      ), ],
+    ),
+
+    saveIdentityCaps = true,
   ),
 );
 
@@ -184,6 +229,7 @@ const myCommand :Spk.Manifest.Command = (
   environ = [
     # Note that this defines the *entire* environment seen by your app.
     (key = "PATH", value = "/usr/local/bin:/usr/bin:/bin"),
+    (key = "SANDSTORM", value = "1"),
     (key = "METEOR_SETTINGS", value = "{\"public\": {\"sandstorm\": true}}")
   ]
 );

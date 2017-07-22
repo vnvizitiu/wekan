@@ -31,6 +31,7 @@ FlowRouter.route('/b/:id/:slug', {
     // If we close a card, we'll execute again this route action but we don't
     // want to excape every current actions (filters, etc.)
     if (previousBoard !== currentBoard) {
+      Filter.reset();
       EscapeActions.executeAll();
     } else {
       EscapeActions.executeUpTo('popup-close');
@@ -79,8 +80,25 @@ FlowRouter.route('/shortcuts', {
   },
 });
 
-FlowRouter.route('/import', {
+FlowRouter.route('/import/:source', {
   name: 'import',
+  triggersEnter: [AccountsTemplates.ensureSignedIn],
+  action(params) {
+    Session.set('currentBoard', null);
+    Session.set('currentCard', null);
+    Session.set('importSource', params.source);
+
+    Filter.reset();
+    EscapeActions.executeAll();
+    BlazeLayout.render('defaultLayout', {
+      headerBar: 'importHeaderBar',
+      content: 'import',
+    });
+  },
+});
+
+FlowRouter.route('/setting', {
+  name: 'setting',
   triggersEnter: [
     AccountsTemplates.ensureSignedIn,
     () => {
@@ -93,8 +111,8 @@ FlowRouter.route('/import', {
   ],
   action() {
     BlazeLayout.render('defaultLayout', {
-      headerBar: 'importHeaderBar',
-      content: 'import',
+      headerBar: 'settingHeaderBar',
+      content: 'setting',
     });
   },
 });
@@ -111,6 +129,7 @@ const redirections = {
   '/boards': '/',
   '/boards/:id/:slug': '/b/:id/:slug',
   '/boards/:id/:slug/:cardId': '/b/:id/:slug/:cardId',
+  '/import': '/import/trello',
 };
 
 _.each(redirections, (newPath, oldPath) => {

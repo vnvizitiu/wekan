@@ -1,8 +1,20 @@
 # Wekan
 
-[![Join the chat][gitter_badge]][gitter_chat]
+[![Wekan Build Status][travis_badge]][travis_status]
 
-Wekan is an open-source and collaborative kanban board application.
+Freenode IRC #wekan
+
+[![Wekan chat][vanila_badge]][vanila_chat]
+
+[Translate Wekan at Transifex][translate_wekan]
+
+[Open Hub analysis of Wekan code](https://www.openhub.net/p/wekan)
+
+Please read [FAQ](https://github.com/wekan/wekan/wiki/FAQ).
+Please don't feed the trolls and spammers that are mentioned in the FAQ :)
+
+Wekan is an completely [Open Source][open_source] and [Free software][free_software]
+collaborative kanban board application with MIT license.
 
 Whether you’re maintaining a personal todo list, planning your holidays with
 some friends, or working in a team on your next revolutionary idea, Kanban
@@ -10,39 +22,75 @@ boards are an unbeatable tool to keep your things organized. They give you a
 visual overview of the current state of your project, and make you productive by
 allowing you to focus on the few items that matter the most.
 
-[![Our roadmap is self-hosted on Wekan][screenshot]][roadmap]
+Wekan has real-time user interface. Not all features are implemented.
 
-Wekan supports most features you would expect of it including a real-time user
-interface, cards comments, member assignations, customizable labels, filtered
-views, and more.
+[Features][features]
 
-Since it is a free software, you don’t have to trust us with your data and can
+Wekan supports many [Platforms][platforms], and plan is to add more.
+
+[Integrations][integrations]
+
+[Team](https://github.com/wekan/wekan/wiki/Team)
+
+You don’t have to trust us with your data and can install Wekan on your own
+computer or server. In fact we encourage you to do that by providing
+one-click installation on various platforms.
+
+## Roadmap
+
+Upcoming Wekan App Development Platform will make possible
+many use cases. If you don't find your feature or integration in
+GitHub issues and [Features][features] or [Integrations][integrations]
+page at wiki, please add them.
+
+We are very welcoming to new developers and teams to submit new pull
+requests to devel branch to make this Wekan App Development Platform possible
+faster. Please see [Developer Documentation][dev_docs] to get started.
+We also welcome sponsors for features, although we don't have any yet.
+By working directly with Wekan you get the benefit of active maintenance
+and new features added by growing Wekan developer community.
+
+Actual work happens at [Wekan GitHub issues][wekan_issues].
+
+See [Development links on Wekan
+wiki](https://github.com/wekan/wekan/wiki#Development)
+bottom of the page for more info.
+
+## Demo
+
+[Wekan demo][roadmap_wefork]
+
+## Screenshot
+
+[More screenshots at Features page](https://github.com/wekan/wekan/wiki/Features)
+
+[![Screenshot of Wekan][screenshot_wefork]][roadmap_wefork]
+
+Since Wekan is a free software, you don’t have to trust us with your data and can
 install Wekan on your own computer or server. In fact we encourage you to do
-that by providing one-click installation on Heroku or [Sandstorm]
-[sandstorm_market] platforms and verified [Docker][docker_image] images. You can
-also install Wekan on the following Platforms:
+that by providing one-click installation on various platforms.
 
-[![Deploy][heroku_button]][heroku_deploy]
-[![SignUp][indiehosters_button]][indiehosters_saas]
-[![Deploy to Scalingo][scalingo_button]][scalingo_deploy]
-[![Install on Cloudron][cloudron_button]][cloudron_install]
+## License
 
 Wekan is released under the very permissive [MIT license](LICENSE), and made
 with [Meteor](https://www.meteor.com).
 
-[Our roadmap is self-hosted on Wekan][roadmap]
-
-[screenshot]: http://i.imgur.com/cI4jW2h.png
-[gitter_badge]: https://badges.gitter.im/Join%20Chat.svg
-[gitter_chat]: https://gitter.im/wekan/wekan
-[roadmap]: http://try.wekan.io/b/MeSsFJaSqeuo9M6bs/wekan-roadmap
-[sandstorm_market]: https://oasis.sandstorm.io/appdemo/m86q05rdvj14yvn78ghaxynqz7u2svw6rnttptxx49g1785cdv1h
-[docker_image]: https://hub.docker.com/r/mquandalle/wekan/
-[heroku_button]: https://www.herokucdn.com/deploy/button.png
-[heroku_deploy]: https://heroku.com/deploy?template=https://github.com/wekan/wekan/tree/master
-[indiehosters_button]: https://indie.host/signup.png
-[indiehosters_saas]: https://indiehosters.net/shop/product/wekan-20
-[scalingo_button]: https://cdn.scalingo.com/deploy/button.svg
-[scalingo_deploy]: https://my.scalingo.com/deploy?source=https://github.com/wekan/wekan#master
-[cloudron_button]: https://cloudron.io/img/button.svg
-[cloudron_install]: https://cloudron.io/button.html?app=io.wekan.cloudronapp
+[platforms]: https://github.com/wekan/wekan/wiki/Platforms
+[dev_docs]: https://github.com/wekan/wekan/wiki/Developer-Documentation
+[screenshot_wekan]: http://i.imgur.com/cI4jW2h.png
+[screenshot_wefork]: https://wekan.github.io/screenshot.png
+[features]: https://github.com/wekan/wekan/wiki/Features
+[integrations]: https://github.com/wekan/wekan/wiki/Integrations
+[roadmap_wekan]: http://try.wekan.io/b/MeSsFJaSqeuo9M6bs/wekan-roadmap
+[roadmap_wefork]: https://wekan.indie.host/b/t2YaGmyXgNkppcFBq/wekan-fork-roadmap
+[wekan_issues]: https://github.com/wekan/wekan/issues
+[wefork_issues]: https://github.com/wefork/wekan/issues
+[docker_image]: https://hub.docker.com/r/wekanteam/wekan/
+[travis_badge]: https://travis-ci.org/wekan/wekan.svg?branch=devel
+[travis_status]: https://travis-ci.org/wekan/wekan
+[wekan_wiki]: https://github.com/wekan/wekan/wiki
+[translate_wekan]: https://www.transifex.com/wekan/wekan/
+[open_source]: https://en.wikipedia.org/wiki/Open-source_software
+[free_software]: https://en.wikipedia.org/wiki/Free_software
+[vanila_badge]: https://vanila.io/img/join-chat-button2.png
+[vanila_chat]: https://chat.vanila.io/channel/wekan

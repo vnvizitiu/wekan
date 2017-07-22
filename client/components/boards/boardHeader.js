@@ -13,13 +13,18 @@ Template.boardMenuPopup.events({
     // confirm that the board was successfully archived.
     FlowRouter.go('home');
   }),
+  'click .js-outgoing-webhooks': Popup.open('outgoingWebhooks'),
 });
 
 Template.boardMenuPopup.helpers({
   exportUrl() {
-    const boardId = Session.get('currentBoard');
-    const loginToken = Accounts._storedLoginToken();
-    return FlowRouter.url(`api/boards/${boardId}?authToken=${loginToken}`);
+    const params = {
+      boardId: Session.get('currentBoard'),
+    };
+    const queryParams = {
+      authToken: Accounts._storedLoginToken(),
+    };
+    return FlowRouter.path('/api/boards/:boardId/export', params, queryParams);
   },
   exportFilename() {
     const boardId = Session.get('currentBoard');
@@ -33,7 +38,7 @@ Template.boardChangeTitlePopup.events({
     const newDesc = tpl.$('.js-board-desc').val().trim();
     if (newTitle) {
       this.rename(newTitle);
-      this.setDesciption(newDesc);
+      this.setDescription(newDesc);
       Popup.close();
     }
     evt.preventDefault();
@@ -97,6 +102,12 @@ BlazeComponent.extendComponent({
   },
 }).register('boardHeaderBar');
 
+Template.boardHeaderBar.helpers({
+  canModifyBoard() {
+    return Meteor.user() && Meteor.user().isBoardMember() && !Meteor.user().isCommentOnly();
+  },
+});
+
 BlazeComponent.extendComponent({
   backgroundColors() {
     return Boards.simpleSchema()._schema.color.allowedValues;
@@ -119,10 +130,15 @@ BlazeComponent.extendComponent({
   },
 }).register('boardChangeColorPopup');
 
-BlazeComponent.extendComponent({
+const CreateBoard = BlazeComponent.extendComponent({
+  template() {
+    return 'createBoard';
+  },
+
   onCreated() {
     this.visibilityMenuIsOpen = new ReactiveVar(false);
     this.visibility = new ReactiveVar('private');
+    this.boardId = new ReactiveVar('');
   },
 
   visibilityCheck() {
@@ -143,15 +159,12 @@ BlazeComponent.extendComponent({
     const title = this.find('.js-new-board-title').value;
     const visibility = this.visibility.get();
 
-    const boardId = Boards.insert({
+    this.boardId.set(Boards.insert({
       title,
       permission: visibility,
-    });
+    }));
 
-    Utils.goBoardId(boardId);
-
-    // Immediately star boards crated with the headerbar popup.
-    Meteor.user().toggleBoardStar(boardId);
+    Utils.goBoardId(this.boardId.get());
   },
 
   events() {
@@ -162,9 +175,24 @@ BlazeComponent.extendComponent({
       'click .js-change-visibility': this.toggleVisibilityMenu,
       'click .js-import': Popup.open('boardImportBoard'),
       submit: this.onSubmit,
+      'click .js-import-board': Popup.open('chooseBoardSource'),
     }];
   },
 }).register('createBoardPopup');
+
+BlazeComponent.extendComponent({
+  template() {
+    return 'chooseBoardSource';
+  },
+}).register('chooseBoardSourcePopup');
+
+(class HeaderBarCreateBoard extends CreateBoard {
+  onSubmit(evt) {
+    super.onSubmit(evt);
+    // Immediately star boards crated with the headerbar popup.
+    Meteor.user().toggleBoardStar(this.boardId.get());
+  }
+}).register('headerBarCreateBoardPopup');
 
 BlazeComponent.extendComponent({
   visibilityCheck() {
@@ -207,3 +235,45 @@ BlazeComponent.extendComponent({
     }];
   },
 }).register('boardChangeWatchPopup');
+
+BlazeComponent.extendComponent({
+  integration() {
+    const boardId = Session.get('currentBoard');
+    return Integrations.findOne({ boardId: `${boardId}` });
+  },
+
+  events() {
+    return [{
+      'submit'(evt) {
+        evt.preventDefault();
+        const url = this.find('.js-outgoing-webhooks-url').value.trim();
+        const boardId = Session.get('currentBoard');
+        const integration = this.integration();
+        if (integration) {
+          if (url) {
+            Integrations.update(integration._id, {
+              $set: {
+                enabled: true,
+                url: `${url}`,
+              },
+            });
+          } else {
+            Integrations.update(integration._id, {
+              $set: {
+                enabled: false,
+              },
+            });
+          }
+        } else if (url) {
+          Integrations.insert({
+            enabled: true,
+            type: 'outgoing-webhooks',
+            url: `${url}`,
+            boardId: `${boardId}`,
+          });
+        }
+        Popup.close();
+      },
+    }];
+  },
+}).register('outgoingWebhooksPopup');

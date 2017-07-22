@@ -89,11 +89,21 @@ BlazeComponent.extendComponent({
     return TAPi18n.__(viewTitles[this.getView()]);
   },
 
+  showTongueTitle() {
+    if (this.isOpen())
+      return `${TAPi18n.__('sidebar-close')}`;
+    else
+      return `${TAPi18n.__('sidebar-open')}`;
+  },
+
   events() {
     return [{
       'click .js-hide-sidebar': this.hide,
       'click .js-toggle-sidebar': this.toggle,
       'click .js-back-home': this.setView,
+      'click .js-shortcuts'() {
+        FlowRouter.go('shortcuts');
+      },
     }];
   },
 }).register('sidebar');
@@ -111,7 +121,17 @@ Template.memberPopup.helpers({
   },
   memberType() {
     const type = Users.findOne(this.userId).isBoardAdmin() ? 'admin' : 'normal';
-    return TAPi18n.__(type).toLowerCase();
+    if(type === 'normal'){
+      const currentBoard = Boards.findOne(Session.get('currentBoard'));
+      const commentOnly = currentBoard.hasCommentOnly(this.userId);
+      if(commentOnly){
+        return TAPi18n.__('comment-only').toLowerCase();
+      } else {
+        return TAPi18n.__(type).toLowerCase();
+      }
+    } else {
+      return TAPi18n.__(type).toLowerCase();
+    }
   },
   isInvited() {
     return Users.findOne(this.userId).isInvitedTo(Session.get('currentBoard'));
@@ -134,8 +154,8 @@ Template.memberPopup.events({
     Popup.close();
   }),
   'click .js-leave-member'() {
-    const currentBoard = Boards.findOne(Session.get('currentBoard'));
-    Meteor.call('quitBoard', currentBoard, (err, ret) => {
+    const boardId = Session.get('currentBoard');
+    Meteor.call('quitBoard', boardId, (err, ret) => {
       if (!ret && ret) {
         Popup.close();
         FlowRouter.go('home');
@@ -163,6 +183,9 @@ Template.membersWidget.helpers({
 Template.membersWidget.events({
   'click .js-member': Popup.open('member'),
   'click .js-manage-board-members': Popup.open('addMember'),
+  'click .sandstorm-powerbox-request-identity'() {
+    window.sandstormRequestIdentity();
+  },
   'click .js-member-invite-accept'() {
     const boardId = Session.get('currentBoard');
     Meteor.user().removeInvite(boardId);
@@ -295,11 +318,12 @@ BlazeComponent.extendComponent({
 }).register('addMemberPopup');
 
 Template.changePermissionsPopup.events({
-  'click .js-set-admin, click .js-set-normal'(event) {
+  'click .js-set-admin, click .js-set-normal, click .js-set-comment-only'(event) {
     const currentBoard = Boards.findOne(Session.get('currentBoard'));
     const memberId = this.userId;
     const isAdmin = $(event.currentTarget).hasClass('js-set-admin');
-    currentBoard.setMemberPermission(memberId, isAdmin);
+    const isCommentOnly = $(event.currentTarget).hasClass('js-set-comment-only');
+    currentBoard.setMemberPermission(memberId, isAdmin, isCommentOnly);
     Popup.back(1);
   },
 });
@@ -308,6 +332,16 @@ Template.changePermissionsPopup.helpers({
   isAdmin() {
     const currentBoard = Boards.findOne(Session.get('currentBoard'));
     return currentBoard.hasAdmin(this.userId);
+  },
+
+  isNormal() {
+    const currentBoard = Boards.findOne(Session.get('currentBoard'));
+    return !currentBoard.hasAdmin(this.userId) && !currentBoard.hasCommentOnly(this.userId);
+  },
+
+  isCommentOnly() {
+    const currentBoard = Boards.findOne(Session.get('currentBoard'));
+    return !currentBoard.hasAdmin(this.userId) && currentBoard.hasCommentOnly(this.userId);
   },
 
   isLastAdmin() {

@@ -28,7 +28,7 @@
     "no-unneeded-ternary": 2,
     "radix": 2,
     "semi": [2, "always"],
-    "camelcase": 2,
+    "camelcase": [2, {"properties": "never"}],
     "comma-spacing": 2,
     "comma-style": 2,
     "eol-last": 2,
@@ -51,7 +51,9 @@
     "object-shorthand": 2,
     "prefer-const": 2,
     "prefer-spread": 2,
-    "prefer-template": 2
+    "prefer-template": 2,
+    "no-console": 0,
+    "no-unused-vars" : "warn"
   },
   "globals": {
     "Meteor": false,
@@ -117,6 +119,16 @@
     "Notifications": true,
     "allowIsBoardAdmin": true,
     "allowIsBoardMember": true,
-    "Emoji": true
+    "allowIsBoardMemberByCard": true,
+    "allowIsBoardMemberNonComment": true,
+    "Emoji": true,
+    "Checklists": true,
+    "Settings": true,
+    "InvitationCodes": true,
+    "Winston":true,
+    "JsonRoutes": true,
+    "Authentication": true,
+    "Integrations": true,
+    "HTTP": true
   }
 }

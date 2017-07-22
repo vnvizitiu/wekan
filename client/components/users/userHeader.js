@@ -5,6 +5,7 @@ Template.headerUserBar.events({
 
 Template.memberMenuPopup.events({
   'click .js-edit-profile': Popup.open('editProfile'),
+  'click .js-change-settings': Popup.open('changeSettings'),
   'click .js-change-avatar': Popup.open('changeAvatar'),
   'click .js-change-password': Popup.open('changePassword'),
   'click .js-change-language': Popup.open('changeLanguage'),
@@ -13,6 +14,9 @@ Template.memberMenuPopup.events({
     evt.preventDefault();
 
     AccountsTemplates.logout();
+  },
+  'click .js-go-setting'() {
+    Popup.close();
   },
 });
 
@@ -26,11 +30,18 @@ Template.editProfilePopup.events({
       'profile.fullname': fullname,
       'profile.initials': initials,
     }});
-    // XXX We should report the error to the user.
+
     if (username !== Meteor.user().username) {
-      Meteor.call('setUsername', username);
-    }
-    Popup.back();
+      Meteor.call('setUsername', username, function(error) {
+        const messageElement = tpl.$('.username-taken');
+        if (error) {
+          messageElement.show();
+        } else {
+          messageElement.hide();
+          Popup.back();
+        }
+      });
+    } else Popup.back();
   },
 });
 
@@ -61,9 +72,17 @@ Template.changePasswordPopup.onRendered(function() {
 
 Template.changeLanguagePopup.helpers({
   languages() {
-    return _.map(TAPi18n.getLanguages(), (lang, tag) => {
-      const name = lang.name;
-      return { tag, name };
+    return _.map(TAPi18n.getLanguages(), (lang, code) => {
+      return {
+        tag: code,
+        name: lang.name === 'br' ? 'Brezhoneg' : lang.name,
+      };
+    }).sort(function(a, b) {
+      if (a.name === b.name) {
+        return 0;
+      } else {
+        return a.name > b.name ? 1 : -1;
+      }
     });
   },
 
@@ -80,5 +99,28 @@ Template.changeLanguagePopup.events({
       },
     });
     evt.preventDefault();
+  },
+});
+
+Template.changeSettingsPopup.helpers({
+  hiddenSystemMessages() {
+    return Meteor.user().hasHiddenSystemMessages();
+  },
+  showCardsCountAt() {
+    return Meteor.user().getLimitToShowCardsCount();
+  },
+});
+
+Template.changeSettingsPopup.events({
+  'click .js-toggle-system-messages'() {
+    Meteor.call('toggleSystemMessages');
+  },
+  'click .js-apply-show-cards-at'(evt, tpl) {
+    evt.preventDefault();
+    const minLimit = parseInt(tpl.$('#show-cards-count-at').val(), 10);
+    if (!isNaN(minLimit)) {
+      Meteor.call('changeLimitToShowCardsCount', minLimit);
+      Popup.back();
+    }
   },
 });

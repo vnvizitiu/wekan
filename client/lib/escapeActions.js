@@ -44,7 +44,7 @@ EscapeActions = {
 
   executeLowest() {
     return this._execute({
-      multipleAction: false,
+      multipleActions: false,
     });
   },
 
@@ -133,4 +133,8 @@ $(document).on('click', (evt) => {
     $(evt.target).closest('a,button,.is-editable').length === 0) {
     EscapeActions.clickExecute(evt.target, 'multiselection');
   }
+});
+
+$(document).on('click', 'a[href=#]',  (evt) => {
+  evt.preventDefault();
 });
